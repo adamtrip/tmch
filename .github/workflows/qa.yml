@@ -1,0 +1,79 @@
+name: Release QA
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  get-next-version:
+    runs-on: [ self-hosted, qa-tmc ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 21
+      - run: npm ci
+      - run: npx semantic-release --dry-run
+        id: get-next-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+    outputs:
+      new-release-published: ${{ steps.get-next-version.outputs.new-release-published }}
+      new-release-version: ${{ steps.get-next-version.outputs.new-release-version }}
+      new-release-git-tag: ${{ steps.get-next-version.outputs.new-release-git-tag }}
+
+  release:
+    runs-on: [ self-hosted, qa-tmc ]
+    needs: get-next-version
+    if: needs.get-next-version.outputs.new-release-published == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # - name: Set up environment variables
+      #   run: |
+      #     echo "HOME=/home/runner" >> $GITHUB_ENV
+      #     echo "DOTNET_CLI_HOME=/home/runner" >> $GITHUB_ENV
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '21'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Update .env for Frontend
+        run: |
+          chmod +x ./scripts/update-env.sh
+          ./scripts/update-env.sh ./src/apps/tmc-frontend/.env REACT_APP_VERSION ${{ needs.get-next-version.outputs.new-release-version }}
+
+      - name: Update Config Files
+        uses: jossef/action-set-json-field@v2.1
+        with:
+          file: ./src/api/server/appsettings.json
+          field: DatabaseOptions.ConnectionString
+          value: ${{ secrets.DB_CONN_QA }}
+
+      - name: Set Aspirate Tools Path
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+         registry: cr.adamtrip.pt
+         username: ${{ secrets.DOCKER_USER }}
+         password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Run Aspirate Commands
+        run: |
+          cd src/aspire/Host
+          aspirate init --container-registry cr.adamtrip.pt --non-interactive --container-image-tag "${{ needs.get-next-version.outputs.new-release-version }}"
+          aspirate generate --image-pull-policy Always --non-interactive --include-dashboard --disable-secrets --container-image-tag "${{ needs.get-next-version.outputs.new-release-version }}" --container-repository-prefix 'tmcm' --container-registry cr.adamtrip.pt --private-registry --private-registry-url cr.adamtrip.pt --private-registry-username "${{ secrets.DOCKER_USER }}" --private-registry-password "${{ secrets.DOCKER_PASS }}"
+          aspirate apply --non-interactive --kube-context default --disable-secrets --rolling-restart
+
+      - name: Generate Release Version
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

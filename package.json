@@ -1,0 +1,15 @@
+{
+  "name": "tmc",
+  "version": "1.0.0",
+  "description": "Welcome to the Trackmania Community Platform! This project aims to provide a dedicated space for Trackmania enthusiasts to collaborate, participate in competitions, and share their passion for the game.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release-export-data": "^1.1.0"
+  }
+}

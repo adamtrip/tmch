@@ -1,0 +1,11 @@
+resources:
+- grafana
+- prometheus
+- webapi
+- image-pull-secret.yaml
+- dashboard.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+

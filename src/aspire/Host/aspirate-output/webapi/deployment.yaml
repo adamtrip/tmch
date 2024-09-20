@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi
+  labels:
+    app: webapi
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapi
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: webapi
+    spec:
+      imagePullSecrets:
+      - name: image-pull-secret
+      containers:
+      - name: webapi
+        image: registry-01.adamtrip.pt/tmc/webapi:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        envFrom:
+        - configMapRef:
+            name: webapi-env
+      terminationGracePeriodSeconds: 180

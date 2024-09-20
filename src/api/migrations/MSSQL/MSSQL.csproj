@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>TMC.WebApi.Migrations.MSSQL</RootNamespace>
+    <AssemblyName>TMC.WebApi.Migrations.MSSQL</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\framework\Infrastructure\Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
