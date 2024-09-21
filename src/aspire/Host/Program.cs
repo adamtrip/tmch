@@ -9,7 +9,12 @@ builder.AddContainer("prometheus", "prom/prometheus")
        .WithBindMount("../../../compose/prometheus", "/etc/prometheus", isReadOnly: true)
        .WithHttpEndpoint(port: 9090, targetPort: 9090);
 
-builder.AddProject<Projects.Server>("webapi");
+var webApi = builder.AddProject<Projects.Server>("webapi");
+
+builder.AddNpmApp("tmc-frontend", "../../apps/tmc-frontend", "dev")
+    .WithReference(webApi)
+    .WithHttpEndpoint(port: 3010, env: "PORT")
+    .PublishAsDockerFile();
 
 await using var app = builder.Build();
 
